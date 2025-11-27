@@ -1,0 +1,732 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CareConnect | Doctor Console</title>
+  <link rel="stylesheet" href="doctor.css" />
+</head>
+<body>
+  <!-- Global loading (optional) -->
+  <div id="globalLoading" class="global-loading hidden">Loading…</div>
+
+  <!-- Toast Notification -->
+  <div class="toast" id="toast">Saved successfully</div>
+
+  <!-- LOGIN SCREEN -->
+  <div class="login-screen" id="loginScreen">
+    <div class="login-card">
+      <h1 class="app-title">CareConnect</h1>
+      <p class="login-subtitle">Doctor Portal</p>
+
+      <!-- Tabs: Login / Sign Up -->
+      <div class="auth-tabs">
+        <button type="button" class="auth-tab active" id="showLoginTab">
+          Log In
+        </button>
+        <button type="button" class="auth-tab" id="showSignupTab">
+          Sign Up
+        </button>
+      </div>
+
+      <!-- LOGIN FORM -->
+      <form id="loginForm" class="auth-form auth-form-login">
+        <div class="form-group">
+          <label for="loginId">Email</label>
+          <input
+            type="email"
+            id="loginId"
+            placeholder="doctor@gmail.com"
+            required
+          />
+        </div>
+        <div class="form-group">
+          <label for="loginPassword">Password</label>
+          <input
+            type="password"
+            id="loginPassword"
+            placeholder="••••••••"
+            required
+          />
+        </div>
+        <div class="form-footer-row">
+          <label style="font-size: 0.8rem; color: var(--text-muted);">
+            <input type="checkbox" id="rememberMe" />
+            Remember me on this device
+          </label>
+        </div>
+        <button
+          type="submit"
+          class="btn primary"
+          style="width: 100%; margin-top: 0.5rem;"
+        >
+          Log In
+        </button>
+      </form>
+
+      <!-- SIGNUP FORM -->
+      <form id="signupForm" class="auth-form auth-form-signup hidden">
+        <div class="form-group">
+          <label for="signupName">Full Name</label>
+          <input
+            type="text"
+            id="signupName"
+            placeholder="Dr. John Doe"
+            required
+          />
+        </div>
+        <div class="form-group">
+          <label for="signupEmail">Email</label>
+          <input
+            type="email"
+            id="signupEmail"
+            placeholder="doctor@gmail.com"
+            required
+          />
+        </div>
+        <div class="form-group">
+          <label for="signupPassword">Password</label>
+          <input
+            type="password"
+            id="signupPassword"
+            placeholder="Create a password"
+            required
+          />
+        </div>
+        <div class="form-group">
+          <label for="signupConfirmPassword">Confirm Password</label>
+          <input
+            type="password"
+            id="signupConfirmPassword"
+            placeholder="Re-enter password"
+            required
+          />
+        </div>
+        <button
+          type="submit"
+          class="btn primary"
+          style="width: 100%; margin-top: 0.5rem;"
+        >
+          Create Account
+        </button>
+        <p
+          class="login-hint"
+          style="margin-top: 0.6rem; font-size: 0.8rem; color: var(--text-muted);"
+        >
+          After sign up, you can log in with your email and password.
+        </p>
+      </form>
+    </div>
+  </div>
+
+  <!-- TOP BAR (shown after login) -->
+  <header class="topbar hidden">
+    <div class="topbar-left">
+      <span class="logo-badge">CC</span>
+      <div>
+        <h1 class="app-title">CareConnect</h1>
+        <p class="app-subtitle">Doctor Console</p>
+      </div>
+    </div>
+    <div class="topbar-right">
+      <!-- Sync indicator -->
+      <span class="sync-indicator" id="syncIndicator">
+        <span class="sync-dot"></span>
+        <span id="syncText">Connecting…</span>
+      </span>
+
+      <span class="doctor-label">
+        Logged in as: <strong id="doctorNameLabel">Doctor</strong>
+      </span>
+      <button
+        class="btn ghost"
+        id="logoutBtn"
+        style="margin-left: 0.6rem; font-size: 0.8rem;"
+      >
+        Logout
+      </button>
+    </div>
+  </header>
+
+  <!-- HOME SCREEN -->
+  <div class="layout hidden" id="homeScreen">
+    <section class="panel home-panel">
+      <h2 class="panel-title">Welcome, Doctor</h2>
+      <p class="panel-subtitle">Choose what you want to do</p>
+      <div class="home-actions">
+        <button class="home-card" id="homeViewDetailsBtn" type="button">
+          <div class="home-card-icon">👁</div>
+          <h3>View Details</h3>
+          <p>See all registered patients and their medical details.</p>
+        </button>
+        <button class="home-card" id="homeAddPatientBtn" type="button">
+          <div class="home-card-icon">➕</div>
+          <h3>Add Patient</h3>
+          <p>Register a new patient and prescribe medicines.</p>
+        </button>
+        <button class="home-card" id="homeDashboardBtn" type="button">
+          <div class="home-card-icon">📊</div>
+          <h3>Health Dashboard</h3>
+          <p>View overall statistics of your patients.</p>
+        </button>
+        <!-- Tablet Intake & Adherence card -->
+        <button class="home-card" id="homeIntakeStatsBtn" type="button">
+          <div class="home-card-icon">💊</div>
+          <h3>Tablet Intake &amp; Adherence</h3>
+          <p>See who is following their medicine schedule.</p>
+        </button>
+      </div>
+    </section>
+  </div>
+
+  <!-- MAIN LAYOUT: PATIENT LIST + DETAILS -->
+  <main class="layout hidden" id="mainLayout">
+    <!-- Back to home row -->
+    <div class="layout-header">
+      <button class="btn ghost back-home-btn" id="backHomeBtn" type="button">
+        ← Back to Home
+      </button>
+    </div>
+
+    <!-- LEFT: PATIENT LIST -->
+    <section class="panel">
+      <div class="panel-header">
+        <div>
+          <h2 class="panel-title">Patients</h2>
+          <p class="panel-subtitle">Manage all registered patients</p>
+        </div>
+        <button class="btn primary" id="addPatientBtn">+ Add Patient</button>
+      </div>
+
+      <div class="stats-row">
+        <div class="stat-card">
+          <p class="stat-label">Total Patients</p>
+          <p class="stat-value" id="totalPatients">0</p>
+        </div>
+        <div class="stat-card">
+          <p class="stat-label">With Medicines</p>
+          <p class="stat-value" id="withMedsCount">0</p>
+        </div>
+      </div>
+
+      <!-- 🔍 SEARCH BAR -->
+      <div class="search-row">
+        <input
+          type="text"
+          id="patientSearchInput"
+          placeholder="Search by patient name or ID..."
+        />
+      </div>
+
+      <div class="table-wrapper">
+        <table class="patients-table">
+          <thead>
+            <tr>
+              <th>Patient ID</th>
+              <th>Name</th>
+              <th>Age*</th>
+              <th>Gender</th>
+              <th>Status</th>
+              <th>Cured In (Days)</th>
+            </tr>
+          </thead>
+          <tbody id="patientsTableBody">
+            <!-- Filled by JS -->
+          </tbody>
+        </table>
+        <p class="table-hint">
+          * Age is calculated from Date of Birth entered in patient app.
+        </p>
+      </div>
+    </section>
+
+    <!-- RIGHT: PATIENT DETAILS -->
+    <section class="panel">
+      <div class="panel-header">
+        <div>
+          <h2 class="panel-title">Patient Details</h2>
+          <p class="panel-subtitle">View &amp; edit selected patient</p>
+        </div>
+        <div class="panel-actions">
+          <button class="btn ghost" id="editPatientBtn" disabled>Edit</button>
+          <button class="btn danger" id="deletePatientBtn" disabled>Delete</button>
+          <button class="btn ghost" id="printPrescriptionBtn" disabled>
+            Print Prescription
+          </button>
+        </div>
+      </div>
+
+      <div id="noSelection" class="empty-state">
+        <p>Select a patient from the list to view details.</p>
+      </div>
+
+      <div id="patientDetails" class="details hidden">
+        <!-- PROFILE -->
+        <div class="details-header">
+          <div class="avatar" id="detailAvatar">P</div>
+          <div>
+            <h3 id="detailName">Patient Name</h3>
+            <p id="detailId">Patient ID: -</p>
+          </div>
+        </div>
+
+        <div class="details-grid">
+          <div class="detail-block">
+            <span class="detail-label">Age</span>
+            <span class="detail-value" id="detailAge">—</span>
+          </div>
+          <div class="detail-block">
+            <span class="detail-label">Gender</span>
+            <span class="detail-value" id="detailGender">—</span>
+          </div>
+          <div class="detail-block">
+            <span class="detail-label">Height</span>
+            <span class="detail-value" id="detailHeight">—</span>
+          </div>
+          <div class="detail-block">
+            <span class="detail-label">Weight</span>
+            <span class="detail-value" id="detailWeight">—</span>
+          </div>
+          <div class="detail-block">
+            <span class="detail-label">Date of Birth</span>
+            <span class="detail-value" id="detailDob">—</span>
+          </div>
+          <div class="detail-block">
+            <span class="detail-label">Status</span>
+            <span class="detail-value" id="detailStatus">Under Treatment</span>
+          </div>
+          <div class="detail-block">
+            <span class="detail-label">Cured In</span>
+            <span class="detail-value" id="detailCuredIn">—</span>
+          </div>
+        </div>
+
+        <!-- HEALTH HISTORY -->
+        <div class="section">
+          <div class="section-header">
+            <h4>Health History</h4>
+          </div>
+          <ul class="history-list" id="detailHistoryList">
+            <!-- Filled by JS -->
+          </ul>
+        </div>
+
+        <!-- MEDICINES -->
+        <div class="section">
+          <div class="section-header">
+            <h4>Prescribed Medicines</h4>
+          </div>
+          <div class="table-wrapper">
+            <table class="meds-table">
+              <thead>
+                <tr>
+                  <th>Medicine</th>
+                  <th>Dosage</th>
+                  <th>When to Take</th>
+                  <th>Dates</th>
+                </tr>
+              </thead>
+              <tbody id="detailMedsBody">
+                <!-- Filled by JS -->
+              </tbody>
+            </table>
+          </div>
+          <p class="section-note">
+            These medicines will be visible in the Patient App.
+          </p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- HEALTH DASHBOARD LAYOUT -->
+  <div class="layout hidden" id="dashboardLayout">
+    <div class="layout-header">
+      <button
+        class="btn ghost back-home-btn"
+        id="backHomeFromDashboardBtn"
+        type="button"
+      >
+        ← Back to Home
+      </button>
+    </div>
+    <section class="panel">
+      <div class="panel-header">
+        <div>
+          <h2 class="panel-title">Health Dashboard</h2>
+          <p class="panel-subtitle">Overview of your patients</p>
+        </div>
+      </div>
+      <div class="dashboard-cards">
+        <div class="dash-card">
+          <p class="dash-label">Total Patients</p>
+          <p class="dash-value" id="dashTotalPatients">0</p>
+        </div>
+        <div class="dash-card">
+          <p class="dash-label">Patients With Medicines</p>
+          <p class="dash-value" id="dashWithMeds">0</p>
+        </div>
+        <div class="dash-card">
+          <p class="dash-label">Male Patients</p>
+          <p class="dash-value" id="dashMalePatients">0</p>
+        </div>
+        <div class="dash-card">
+          <p class="dash-label">Female Patients</p>
+          <p class="dash-value" id="dashFemalePatients">0</p>
+        </div>
+        <div class="dash-card">
+          <p class="dash-label">Other / Not Set</p>
+          <p class="dash-value" id="dashOtherPatients">0</p>
+        </div>
+        <div class="dash-card">
+          <p class="dash-label">With BP History</p>
+          <p class="dash-value" id="dashWithBpHistory">0</p>
+        </div>
+        <div class="dash-card">
+          <p class="dash-label">Marked as Diabetic</p>
+          <p class="dash-value" id="dashDiabeticPatients">0</p>
+        </div>
+        <div class="dash-card">
+          <p class="dash-label">Cured Patients</p>
+          <p class="dash-value" id="dashCuredPatients">0</p>
+        </div>
+      </div>
+      <p class="dashboard-note">
+        These numbers are calculated from all patients currently stored in the
+        CareConnect database.
+      </p>
+    </section>
+  </div>
+
+  <!-- TABLET INTAKE & ADHERENCE LAYOUT -->
+  <div class="layout hidden" id="intakeLayout">
+    <div class="layout-header">
+      <button
+        class="btn ghost back-home-btn"
+        id="backHomeFromIntakeBtn"
+        type="button"
+      >
+        ← Back to Home
+      </button>
+    </div>
+    <section class="panel">
+      <div class="panel-header">
+        <div>
+          <h2 class="panel-title">Tablet Intake &amp; Adherence</h2>
+          <p class="panel-subtitle">
+            See how well patients are following their medicine schedule.
+          </p>
+        </div>
+      </div>
+
+      <div class="intake-layout-grid">
+        <!-- Left: patients + adherence -->
+        <div class="intake-left">
+          <h3 class="intake-subtitle">Patients</h3>
+          <div class="table-wrapper">
+            <table class="patients-table">
+              <thead>
+                <tr>
+                  <th>Patient ID</th>
+                  <th>Name</th>
+                  <th>Adherence</th>
+                </tr>
+              </thead>
+              <tbody id="intakePatientsBody">
+                <!-- filled by JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Right: details for selected patient -->
+        <div class="intake-right">
+          <div class="intake-header">
+            <h3 id="intakeSelectedName">No patient selected</h3>
+            <p id="intakeSelectedId">
+              Choose a patient on the left to see logs.
+            </p>
+          </div>
+
+          <div class="intake-stats-row">
+            <div class="intake-stat-card">
+              <p class="intake-stat-label">Total Intake Events</p>
+              <p class="intake-stat-value" id="intakeTotalEvents">0</p>
+            </div>
+            <div class="intake-stat-card">
+              <p class="intake-stat-label">Taken</p>
+              <p class="intake-stat-value" id="intakeTakenCount">0</p>
+            </div>
+            <div class="intake-stat-card">
+              <p class="intake-stat-label">Missed</p>
+              <p class="intake-stat-value" id="intakeMissedCount">0</p>
+            </div>
+            <div class="intake-stat-card">
+              <p class="intake-stat-label">Adherence</p>
+              <p class="intake-stat-value" id="intakeAdherencePercent">0%</p>
+            </div>
+          </div>
+
+          <div class="table-wrapper">
+            <table class="meds-table">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Scheduled Time</th>
+                  <th>Servo / Slot</th>
+                  <th>Status</th>
+                  <th>Taken At</th>
+                </tr>
+              </thead>
+              <tbody id="intakeEventsBody">
+                <!-- filled by JS -->
+              </tbody>
+            </table>
+          </div>
+
+          <p class="section-note">
+            Intake logs come from the IoT dispenser (or can be added by your
+            app / backend into the <strong>intakeLogs</strong> collection.
+          </p>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- FULL-PAGE ADD / EDIT PATIENT LAYOUT -->
+  <div class="layout hidden" id="addPatientLayout">
+    <div class="layout-header">
+      <button class="btn ghost back-home-btn" id="backFromAddBtn" type="button">
+        ← Back
+      </button>
+    </div>
+    <section class="panel">
+      <div class="panel-header">
+        <div>
+          <h2 class="panel-title" id="addPageTitle">Add Patient</h2>
+          <p class="panel-subtitle">Enter patient details and prescription</p>
+        </div>
+      </div>
+
+      <form id="patientForm">
+        <div class="modal-section">
+          <h3>Basic Details</h3>
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="formPatientId">Patient ID</label>
+              <input
+                type="text"
+                id="formPatientId"
+                required
+                placeholder="Ex: P-30001"
+              />
+            </div>
+            <div class="form-group">
+              <label for="formPatientName">Name</label>
+              <input
+                type="text"
+                id="formPatientName"
+                required
+                placeholder="Full name"
+              />
+            </div>
+            <div class="form-group">
+              <label for="formDob">Date of Birth</label>
+              <input type="date" id="formDob" required />
+            </div>
+            <div class="form-group">
+              <label for="formGender">Gender</label>
+              <select id="formGender" class="large-select" required>
+                <option value="">Select</option>
+                <option>Male</option>
+                <option>Female</option>
+                <option>Other</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="formHeight">Height (cm)</label>
+              <input
+                type="number"
+                id="formHeight"
+                min="0"
+                step="0.1"
+                placeholder="Ex: 172"
+              />
+            </div>
+            <div class="form-group">
+              <label for="formWeight">Weight (kg)</label>
+              <input
+                type="number"
+                id="formWeight"
+                min="0"
+                step="0.1"
+                placeholder="Ex: 70"
+              />
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-section">
+          <h3>Health History</h3>
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="formBpHistory">BP History</label>
+              <input
+                type="text"
+                id="formBpHistory"
+                placeholder="e.g. Mild hypertension (controlled) / Normal"
+              />
+            </div>
+            <div class="form-group">
+              <label for="formDiabetic">Diabetic</label>
+              <input
+                type="text"
+                id="formDiabetic"
+                placeholder="e.g. Type 2 diabetes (5 years) / No"
+              />
+            </div>
+            <div class="form-group">
+              <label for="formSurgeries">Surgeries</label>
+              <input
+                type="text"
+                id="formSurgeries"
+                placeholder="e.g. Appendix surgery (2016) / None"
+              />
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-section">
+          <h3>Treatment Status</h3>
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="formStatus">Status</label>
+              <select id="formStatus" class="large-select">
+                <option>Under Treatment</option>
+                <option>Improving</option>
+                <option>Cured</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="formCuredInDays">No. of days patient got cured</label>
+              <input
+                type="number"
+                id="formCuredInDays"
+                min="0"
+                placeholder="Ex: 3"
+              />
+              <small
+                style="font-size:0.7rem;color:var(--text-muted);"
+              >
+                Fill this only when status is <strong>Cured</strong>.
+              </small>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-section">
+          <h3>Device &amp; Medicine Dispenser</h3>
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="formDeviceId">Device ID</label>
+              <input
+                type="text"
+                id="formDeviceId"
+                placeholder="Ex: DEVICE_001"
+              />
+              <small
+                style="font-size:0.7rem;color:var(--text-muted);"
+              >
+                This must match the deviceId programmed into the ESP32.
+              </small>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-section">
+          <div class="modal-section-header">
+            <h3>Medicines</h3>
+            <button
+              type="button"
+              class="btn small"
+              id="addMedRowBtn"
+            >
+              + Add Medicine
+            </button>
+          </div>
+
+          <div class="table-wrapper meds-form-wrapper">
+            <table class="meds-table form-meds-table">
+              <thead>
+                <tr>
+                  <th>Medicine</th>
+                  <th>Dosage</th>
+                  <th>Morning / Afternoon / Night (tick + time)</th>
+                  <th>Dates (pick + Add)</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="formMedsBody">
+                <!-- Rows added by JS -->
+              </tbody>
+            </table>
+            <p
+              style="font-size:0.78rem; color:var(--text-muted); margin-top:6px;"
+            >
+              Use the calendar to pick a date and click
+              <strong>Add</strong>. You can add multiple dates per medicine.
+            </p>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn ghost" id="cancelAddBtn">
+            Cancel
+          </button>
+          <button type="submit" class="btn primary" id="savePatientBtn">
+            Save
+          </button>
+        </div>
+
+        <input type="hidden" id="editingPatientId" />
+      </form>
+    </section>
+  </div>
+
+  <!-- DELETE CONFIRM MODAL -->
+  <div class="modal-overlay hidden" id="confirmDeleteModal">
+    <div class="modal small-modal">
+      <div class="modal-header">
+        <h2>Delete patient?</h2>
+        <button class="close-btn" id="cancelDeleteBtn" type="button">×</button>
+      </div>
+      <p style="font-size:0.85rem; color:var(--text-muted); margin-bottom:0.6rem;">
+        This will permanently remove the patient and their prescription from
+        CareConnect. This action cannot be undone.
+      </p>
+      <div class="modal-footer">
+        <button type="button" class="btn ghost" id="cancelDeleteBtnFooter">
+          Cancel
+        </button>
+        <button type="button" class="btn danger" id="confirmDeleteBtn">
+          Delete
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="doctor.js"></script>
+
+  <script>
+    /* Small helper to make both Cancel buttons in delete modal work */
+    const cancelDeleteBtn = document.getElementById("cancelDeleteBtn");
+    const cancelDeleteBtnFooter = document.getElementById("cancelDeleteBtnFooter");
+    const confirmDeleteModal = document.getElementById("confirmDeleteModal");
+    if (cancelDeleteBtn && cancelDeleteBtnFooter && confirmDeleteModal) {
+      const closeModal = () => confirmDeleteModal.classList.add("hidden");
+      cancelDeleteBtn.addEventListener("click", closeModal);
+      cancelDeleteBtnFooter.addEventListener("click", closeModal);
+    }
+  </script>
+</body>
+</html>
