@@ -1,4 +1,4 @@
-// doctor.js (updated with Firebase Auth multi-doctor login + signup, Intake Stats, delete modal, sync indicator)
+// doctor.js (updated with per-doctor isolation + Firebase Auth multi-doctor login + signup, Intake Stats, delete modal, sync indicator)
 
 // ---------- FIREBASE IMPORTS ----------
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
@@ -10,7 +10,9 @@ import {
   deleteDoc,
   serverTimestamp,
   onSnapshot,
-  getDoc
+  getDoc,
+  query,
+  where
 } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
 
 import {
@@ -451,9 +453,29 @@ async function handleSignupSubmit(event) {
 
 // ---------- FIRESTORE (realtime) ----------
 function setupRealtimePatientsListener() {
-  if (patientsUnsubscribe) patientsUnsubscribe();
+  // Clear previous listener if exists
+  if (patientsUnsubscribe) {
+    try {
+      patientsUnsubscribe();
+    } catch (e) {}
+    patientsUnsubscribe = null;
+  }
+
+  // Must have a logged-in doctor to query patients
+  if (!currentDoctor || !currentDoctor.uid) {
+    patients = [];
+    renderPatientsTable(patientSearchInput ? patientSearchInput.value : "");
+    renderDashboard();
+    renderIntakePatientsList();
+    setSyncState("offline", "Not connected");
+    return;
+  }
+
+  // Query only patients belonging to this doctor
+  const q = query(patientsColRef, where("doctorId", "==", currentDoctor.uid));
+
   patientsUnsubscribe = onSnapshot(
-    patientsColRef,
+    q,
     function (snap) {
       patients = [];
       snap.forEach(function (d) {
@@ -484,7 +506,14 @@ function setupRealtimePatientsListener() {
 }
 
 function setupRealtimeIntakeListener() {
-  if (intakeUnsubscribe) intakeUnsubscribe();
+  if (intakeUnsubscribe) {
+    try {
+      intakeUnsubscribe();
+    } catch (e) {}
+    intakeUnsubscribe = null;
+  }
+
+  // keep listening to intakeLogs collection (we'll filter in UI to doctor's patients)
   intakeUnsubscribe = onSnapshot(
     intakeLogsColRef,
     function (snap) {
@@ -521,7 +550,9 @@ async function addOrUpdatePatientInFirestore(patient, isNew) {
   const refDoc = doc(patientsColRef, patient.id);
   const dataToStore = Object.assign({}, patient, {
     id: patient.id,
-    updatedAt: serverTimestamp()
+    updatedAt: serverTimestamp(),
+    // Ensure doctorId is set to current logged-in doctor
+    doctorId: currentDoctor && currentDoctor.uid ? currentDoctor.uid : null
   });
   if (isNew) dataToStore.createdAt = serverTimestamp();
   await setDoc(refDoc, dataToStore, { merge: true });
@@ -1307,6 +1338,7 @@ function renderDashboard() {
 
 // ---------- INTAKE STATS & ADHERENCE ----------
 function computeAdherenceForPatient(patientId) {
+  // Only consider logs that belong to this patient's id
   const logs = intakeLogs.filter(function (l) {
     return l.patientId === patientId;
   });
@@ -1343,6 +1375,7 @@ function renderIntakePatientsList() {
     return;
   }
 
+  // Only loop through patients assigned to the current doctor (patients array already filtered)
   patients.forEach(function (p) {
     const stats = computeAdherenceForPatient(p.id);
     const tr = document.createElement("tr");
@@ -2020,7 +2053,9 @@ if (patientForm) {
       servo3Times: servo3Times,
       servo1Dates: servo1Dates,
       servo2Dates: servo2Dates,
-      servo3Dates: servo3Dates
+      servo3Dates: servo3Dates,
+      // ensure doctorId is present
+      doctorId: currentDoctor && currentDoctor.uid ? currentDoctor.uid : null
     };
 
     try {
@@ -2039,6 +2074,7 @@ if (patientForm) {
             servo1Dates: servo1Dates,
             servo2Dates: servo2Dates,
             servo3Dates: servo3Dates,
+            doctorId: currentDoctor && currentDoctor.uid ? currentDoctor.uid : null,
             updatedAt: serverTimestamp()
           },
           { merge: true }
@@ -2084,11 +2120,15 @@ function setLoggedOutUI() {
 
   // unsubscribe realtime listeners
   if (patientsUnsubscribe) {
-    patientsUnsubscribe();
+    try {
+      patientsUnsubscribe();
+    } catch (e) {}
     patientsUnsubscribe = null;
   }
   if (intakeUnsubscribe) {
-    intakeUnsubscribe();
+    try {
+      intakeUnsubscribe();
+    } catch (e) {}
     intakeUnsubscribe = null;
   }
 
@@ -2134,6 +2174,7 @@ async function handleAuthStateChange(user) {
         }
       }
       setLoggedInUI(nameToUse);
+      // Start listeners now that currentDoctor is set
       startRealtimeListeners();
     } catch (err) {
       console.error("Failed to load doctor profile:", err);
