@@ -2318,3 +2318,20 @@ init();
     sel.parentNode.insertBefore(wrapper, sel.nextSibling);
   });
 })();
+
+// ----- Password Show/Hide -----
+document.addEventListener("click", function (e) {
+  if (e.target.classList.contains("toggle-password")) {
+    const targetInputId = e.target.dataset.target;
+    const input = document.getElementById(targetInputId);
+    if (!input) return;
+
+    if (input.type === "password") {
+      input.type = "text";
+      e.target.textContent = "🙈"; // hide icon
+    } else {
+      input.type = "password";
+      e.target.textContent = "👁"; // show icon
+    }
+  }
+});
