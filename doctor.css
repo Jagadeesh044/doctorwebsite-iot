@@ -705,6 +705,48 @@ select option {
   gap: 0.5rem;
 }
 
+/* ----- TWO-COLUMN PATIENT FORM LAYOUT (A1: 50/50 split) ----- */
+
+.add-edit-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;   /* 50% + 50% */
+  gap: 1.2rem;
+  margin-top: 0.8rem;
+}
+
+/* Left (patient info) panel */
+.add-edit-left {
+  background: var(--card-bg);
+  padding: 1rem;
+  border-radius: 14px;
+  box-shadow: var(--shadow-soft);
+}
+
+/* Right (medicines) panel */
+.add-edit-right {
+  background: var(--card-bg);
+  padding: 1rem;
+  border-radius: 14px;
+  box-shadow: var(--shadow-soft);
+  max-height: 80vh;
+  overflow-y: auto;        /* scroll only the medicines panel */
+}
+
+/* Title for column panels */
+.add-edit-section-title {
+  font-size: 1rem;
+  font-weight: 600;
+  margin-bottom: 0.7rem;
+}
+
+/* RESPONSIVE — Stack columns on small screens */
+@media (max-width: 850px) {
+  .add-edit-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+
 /* Medicines in form - big box style */
 .form-meds-table input[type="text"],
 .form-meds-table input[type="number"],
@@ -1279,4 +1321,62 @@ select option {
   .login-screen {
     padding-inline: 1rem;
   }
+}
+
+
+.password-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+.password-wrapper input {
+  padding-right: 2.5rem !important;
+}
+
+.toggle-password {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  cursor: pointer;
+  font-size: 1rem;
+  color: var(--text-muted);
+  user-select: none;
+}
+
+.toggle-password:hover {
+  color: var(--primary);
+}
+
+.two-column-wrapper {
+    display: flex;
+    gap: 20px;
+    align-items: flex-start;
+}
+
+/* Left (Basic Details) takes more width */
+.left-block {
+    flex: 0.55;
+}
+
+/* Right (Medicines) takes remaining width */
+.right-block {
+    flex: 0.45;
+}
+
+/* REMOVE internal scrolling */
+.right-block, 
+.left-block {
+    overflow: visible !important;
+}
+
+/* 🔥 Mobile / Tablet View → stack */
+@media (max-width: 992px) {
+    .two-column-wrapper {
+        flex-direction: column;
+    }
+
+    .left-block, .right-block {
+        width: 100%;
+    }
 }
